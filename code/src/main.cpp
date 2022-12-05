@@ -70,7 +70,7 @@ int main(int, char**)
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexImage3D(GL_TEXTURE_3D,0,GL_INTENSITY,x_size,y_size,z_size,0,GL_LUMINANCE,GL_UNSIGNED_BYTE,volume);
+    glTexImage3D(GL_TEXTURE_3D,0,GL_INTENSITY,x_size,y_size,z_size,0,GL_LUMINANCE,GL_UNSIGNED_BYTE,volume);      //Making a 3D texture with the volume
     delete [] volume;
 
     
@@ -81,18 +81,18 @@ int main(int, char**)
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexImage1D(GL_TEXTURE_1D,0,GL_RGBA,256,0,GL_RGBA,GL_FLOAT,tf);
+    glTexImage1D(GL_TEXTURE_1D,0,GL_RGBA,256,0,GL_RGBA,GL_FLOAT,tf);                    // Making a 1d transfer function
     
     glGenVertexArrays(1, &VAO);
 
     glUseProgram(shaderProgram);
-    setupModelTransformation(shaderProgram);
+    setupModelTransformation(shaderProgram);                    // These funs will set and pass the Model, View, Transformation matrix to shaders
     setupViewTransformation(shaderProgram);
     setupProjectionTransformation(shaderProgram);
 
-    setUniforms(shaderProgram);
+    setUniforms(shaderProgram);                         // This will set all the uniform variable inside shaders
 
-    createBoundingbox(shaderProgram, VAO);
+    createBoundingbox(shaderProgram, VAO);                  // Creating vounding box;
 
     oldX = oldY = currentX = currentY = 0.0;
     int prevLeftButtonState = GLFW_RELEASE;
@@ -119,7 +119,7 @@ int main(int, char**)
             isDragging = false;
         }
 
-        if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) {
+        if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) {               // Moving camera with key press up/(shift-up)
           if(io.KeyShift)
 			{	
 				camposition.z = camposition.z+2;
@@ -207,19 +207,19 @@ GLfloat* createTransferfun(int width, int height)
             tf[i*4] = 1.0;
             tf[i*4 + 1] = 0.0;
             tf[i*4 + 2] = 0.0;
-            tf[i*4 + 3] = 0.5;
+            tf[i*4 + 3] = 1.0;
         }
         if(i>=80 && i<=150){
             tf[i*4] = 0.0;
             tf[i*4 + 1] = 1.0;
             tf[i*4 + 2] = 0.0;
-            tf[i*4 + 3] = 0.5;
+            tf[i*4 + 3] = 1.0;
         }
         if(i>=200 && i<=256){
             tf[i*4] = 0.0;
             tf[i*4 + 1] = 0.0;
             tf[i*4 + 2] = 1.0;
-            tf[i*4 + 3] = 0.5;
+            tf[i*4 + 3] = 1.0;
         }
     }
     return tf;
@@ -291,7 +291,6 @@ void createBoundingbox(unsigned int &program, unsigned int &cube_VAO)
 void setupModelTransformation(unsigned int &program)
 {
     //Modelling transformations (Model -> World coordinates)
-    // modelT = glm::translate(glm::mat4(1.0f), glm::vec3(-x_size/2, -y_size/2, -z_size/2));//Model coordinates are the world coordinates
     modelT = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0));//Model coordinates are the world coordinates
 
     //Pass on the modelling matrix to the vertex shader

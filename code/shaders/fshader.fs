@@ -2,10 +2,11 @@
 
 in vec3 fColor;
 in vec3 cameraPos;
+in mat4 inv_view_proj;
+
 uniform float stepSize;
 uniform vec3 ExtentMax;
 uniform vec3 ExtentMin;
-in mat4 inv_view_proj;
 
 uniform sampler1D transferfun;
 uniform sampler3D texture3d;
@@ -50,10 +51,6 @@ bool rayintersection(vec3 position, vec3 dir)
                 tmin_y = (bounds1.y - position.y)*invdir.y;
                 tmax_y = (bounds0.y - position.y)*invdir.y;
         }
-        // tmin = (bounds[sign0].x - position.x)*invdir.x;
-        // tmax = (bounds[1-sign0].x - position.x)*invdir.x;
-        // tmin_y = (bounds[sign1].y - position.y)*invdir.y;
-        // tmax_y = (bounds[1-sign1].y - position.y)*invdir.y;
 
         if((tmin > tmax_y) || (tmax_y > tmax)){
                 return false;
@@ -75,8 +72,6 @@ bool rayintersection(vec3 position, vec3 dir)
                 tmin_z = (bounds1.z - position.z)*invdir.z; 
                 tmax_z = (bounds0.z - position.z)*invdir.z;
         }
-        // tmin_z = (bounds[sign2].z - position.z)*invdir.z; 
-        // tmax_z = (bounds[1-sign2].z - position.z)*invdir.z;
         
         if ((tmin > tmax_z) || (tmin_z > tmax)) 
                 return false;
@@ -134,11 +129,6 @@ void main()
         // outColor = vec4(s, 1.0);
         // outColor = dst*vec4(fColor, 1.0);
 }
-
-// vec3 worldpos(float depth){
-//         float z = depth*2.0 - 1.0;
-//         vec4 clipspacepos = vec4()
-// }
 
 // void main(void) {
 //         // for(int i=0;i<200;i++){
