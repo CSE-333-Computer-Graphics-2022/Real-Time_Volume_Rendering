@@ -2,23 +2,40 @@
 
 in vec3 fColor;
 in vec3 cameraPos;
-in mat4 inv_view_proj;
+in vec4 fragPos;
+in vec3 ExtentMax;
+in vec3 ExtentMin;
 
 uniform float stepSize;
-uniform vec3 ExtentMax;
-uniform vec3 ExtentMin;
+// uniform vec3 ExtentMax;
+// uniform vec3 ExtentMin;
 
 uniform sampler1D transferfun;
 uniform sampler3D texture3d;
 
+float screen_width = 640;
+float screen_height = 640;
+
 vec4 value;
 float scalar;
 vec4 dst = vec4(0, 0, 0, 0);
-vec3 direction;
+vec3 direction = vec3(0.0, 0.0, 0.0);
 vec3 curren_pos, pos_max, pos_min;
-int screen_width = 640;
-int screen_height=640;
 float tmin_y, tmin_z, tmax_y, tmax_z, tmin, tmax;
+
+vec3 up = vec3(0,1,0);
+float aspect = screen_width/screen_height;
+float focalHeight = 1.0; //Let's keep this fixed to 1.0
+float focalDistance = focalHeight/(2.0 * tan(45 * 3.14/(180.0 * 2.0))); //More the fovy, close is focal plane
+vec3 w = vec3(cameraPos - vec3(0,0,0));
+vec3 w1 = normalize(w);
+vec3 u = cross(up,w1);
+vec3 u1 = normalize(u);
+vec3 v = cross(w1,u1);
+vec3 v1 = normalize(v);
+
+// normalize(direction);
+
 
 out vec4 outColor;
 
@@ -84,73 +101,45 @@ bool rayintersection(vec3 position, vec3 dir)
 
 void main()
 {
-        vec4 ndc = vec4((gl_FragCoord.x/screen_width - 0.5)*2.0,(gl_FragCoord.y/screen_height - 0.5)*2.0,(gl_FragCoord.z - 0.5)*2.0,1.0);
-        vec4 clip = inv_view_proj*ndc;
-        vec3 position = (clip/clip.w).xyz;
+        vec3 position = vec3(fragPos);
 
-        direction = position - cameraPos;
+        direction += -(w1)*focalDistance;
+        float xw = aspect*(fragPos.x - screen_width/2.0 + 0.5)/screen_width;
+        float yw = (fragPos.y - screen_height/2.0 + 0.5)/screen_height;
+        direction += u1 * xw;
+        direction += v1 * yw;
+
+        position = position + direction*focalDistance;
+
+        // direction = position - cameraPos;
         if(!rayintersection(position,direction)){
-                outColor = vec4(0,0,0,1);
+                outColor = vec4(0.0,0.0,0.0,0.0);
                 return;
         }
         pos_min = position + tmin*direction;
         pos_max = position + tmax*direction;
 
-        dst = vec4(0,1,0,0);
+        dst = vec4(0,0,0,0);
         curren_pos = pos_min;
-        for(int i=0;i<200;i++){
-                value = texture(texture3d, curren_pos);
+        int tot_sample = 200;
+        for(int i=0;i<tot_sample;i++){
+                value = texture(texture3d, curren_pos/(ExtentMax-ExtentMin));
                 scalar = value.a;
                 vec4 src = texture(transferfun,scalar);
 
                 dst = (1.0-dst.a)*src + dst;
                 curren_pos = curren_pos + direction*stepSize;
                 
-
                 if(curren_pos.x<ExtentMin.x || curren_pos.y<ExtentMin.y || curren_pos.z<ExtentMin.z
                         || curren_pos.x>ExtentMax.x || curren_pos.y>ExtentMax.y || curren_pos.z>ExtentMax.z)
                         {
                                 break;
                         }
-                // vec3 temp1 = sign(position - ExtentMin);
-                // vec3 temp2 = sign(ExtentMax - position);
-                // float inside = dot(temp1,temp2);
-                // if(inside<3.0){
-                //         dst = vec4(1,0,0,0);
-                //         break;
+                // if(i==tot_sample-1){
+                //         tot_sample += 10;
                 // }
         }
         // outColor = vec4(vec3(gl_FragCoord.z), 1.0)*vec4(1,0,0,0);
-        outColor = vec4(fColor,1.0);
-        // outColor = value*vec4(fColor, 1.0)*src;
-        // outColor = normalize(src+vec4(fColor, 1.0))/2;
-        // vec3 s = (normalize(fColor+cameraPos+stepSize))/2;
-         // outColor = vec4(fColor, 1.0);//cameraPos;
-        // outColor = vec4(s, 1.0);
-        // outColor = dst*vec4(fColor, 1.0);
+        outColor = dst;
+        // outColor = vec4(fColor,1.0)
 }
-
-// void main(void) {
-//         // for(int i=0;i<200;i++){
-//         //         value = texture(texture3d, position);
-//         //         scalar = value.a;
-//         //         vec4 src = texture(transferfun,scalar);
-
-//         //         dst = (1.0-dst.a)*src + dst;
-//         //         position = position + direction*stepSize;
-
-//         //         vec3 temp1 = sign(position - ExtentMin);
-//         //         vec3 temp2 = sign(ExtentMax - position);
-//         //         float inside = dot(temp1,temp2);
-//         //         if(inside<3.0){
-//         //                 break;
-//         //         }
-//         // }
-//         outColor = vec4(vec3(gl_FragCoord.z), 1.0)*vec4(fColor, 1.0);
-//         // outColor = value*vec4(fColor, 1.0)*src;
-//         // outColor = normalize(src+vec4(fColor, 1.0))/2;
-//         // vec3 s = (normalize(fColor+cameraPos+stepSize))/2;
-//         // outColor = vec4(fColor, 1.0);//cameraPos;
-//         // outColor = vec4(s, 1.0);
-//         // outColor = dst*vec4(fColor, 1.0);
-// }

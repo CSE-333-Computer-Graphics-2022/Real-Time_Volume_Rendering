@@ -24,6 +24,7 @@ double oldX, oldY, currentX, currentY;
 bool isDragging=false;
 
 void createBoundingbox(unsigned int &, unsigned int &);
+void createLines(unsigned int &, unsigned int &);
 void setupModelTransformation(unsigned int &);
 void setupViewTransformation(unsigned int &);
 void setupProjectionTransformation(unsigned int &);
@@ -38,7 +39,8 @@ float step_size = 0.001;
 const int vol_size = x_size*y_size*z_size;
 GLubyte* volume = new GLubyte[vol_size];
 GLfloat *tf = new GLfloat[256*4];
-glm::vec4 camposition = glm::vec4(0.0, 0.0, 500.0, 1.0);
+glm::vec4 camposition = glm::vec4(0, 0, 600.0, 1.0);
+glm::vec3 up = glm::vec3(0.0, 1.0, 0.0);
 GLuint VAO, transferfun, texture3d;
 
 int main(int, char**)
@@ -90,9 +92,8 @@ int main(int, char**)
     setupViewTransformation(shaderProgram);
     setupProjectionTransformation(shaderProgram);
 
-    setUniforms(shaderProgram);                         // This will set all the uniform variable inside shaders
-
     createBoundingbox(shaderProgram, VAO);                  // Creating vounding box;
+    // createLines(shaderProgram, VAO);
 
     oldX = oldY = currentX = currentY = 0.0;
     int prevLeftButtonState = GLFW_RELEASE;
@@ -120,16 +121,12 @@ int main(int, char**)
         }
 
         if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) {               // Moving camera with key press up/(shift-up)
-          if(io.KeyShift)
-			{	
-				camposition.z = camposition.z+2;
-				setupViewTransformation(shaderProgram);
-			}
-          else 
-		  	{
-				camposition.z = camposition.z-2;
-				setupViewTransformation(shaderProgram);
-			}
+            camposition.z = camposition.z+2;
+            setupViewTransformation(shaderProgram);
+        }
+        if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_DownArrow))){
+            camposition.z = camposition.z-2;
+            setupViewTransformation(shaderProgram);
         }
 
         // Rotate based on mouse drag movementsetupViewTransformation(shaderProgram);
@@ -146,6 +143,13 @@ int main(int, char**)
             modelT = glm::rotate(modelT, angle, axis_in_object_coord);
             glUniformMatrix4fv(vModel_uniform, 1, GL_FALSE, glm::value_ptr(modelT));
 
+            // glm::vec3 cam_direction = glm::normalize(glm::vec3(camposition) - glm::vec3(0,0,0));
+            // glm::vec3 right_axis = glm::normalize(cross(up,cam_direction));
+            // up = glm::cross(cam_direction,right_axis);
+            // setupViewTransformation(shaderProgram);
+
+
+
             oldX = currentX;
             oldY = currentY;
         }
@@ -156,6 +160,7 @@ int main(int, char**)
         ImGui::NewFrame();
 
         glUseProgram(shaderProgram);
+        setUniforms(shaderProgram);                         // This will set all the uniform variable inside shaders
 
         {
             ImGui::Begin("Information");                          
@@ -174,6 +179,7 @@ int main(int, char**)
         glBindVertexArray(VAO); 
         
         glDrawArrays(GL_TRIANGLES, 0, 36);
+        // glDrawArrays(GL_LINES, 0, 24);
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
@@ -181,7 +187,6 @@ int main(int, char**)
 
     }
 
-    // Cleanup
     cleanup(window);
 
     return 0;
@@ -195,7 +200,6 @@ bool load_volume(const char* filename)
         return false;
     }
     fread(volume,sizeof(GLubyte),vol_size,file);
-    std::cout<<"Reached Here";
     fclose(file);
     return true;
 }
@@ -203,26 +207,63 @@ bool load_volume(const char* filename)
 GLfloat* createTransferfun(int width, int height)
 {
     for(int i=0; i<256; i++) {
-        if(i>=0 && i<=10){
-            tf[i*4] = 1.0;
-            tf[i*4 + 1] = 0.0;
-            tf[i*4 + 2] = 0.0;
-            tf[i*4 + 3] = 1.0;
-        }
-        if(i>=80 && i<=150){
-            tf[i*4] = 0.0;
-            tf[i*4 + 1] = 1.0;
-            tf[i*4 + 2] = 0.0;
-            tf[i*4 + 3] = 1.0;
-        }
-        if(i>=200 && i<=256){
-            tf[i*4] = 0.0;
-            tf[i*4 + 1] = 0.0;
-            tf[i*4 + 2] = 1.0;
-            tf[i*4 + 3] = 1.0;
-        }
+
+        tf[i*4] = float(i)/255.0;
+        tf[i*4 + 1] = float(i)/255.0;
+        tf[i*4 + 2] = float(i)/255.0;
+        tf[i*4 + 3] = 0.5;
     }
     return tf;
+}
+
+void createLines(unsigned int &program, unsigned int &cube_VAO)
+{
+    glUseProgram(program);
+    //Bind shader variables
+    int vVertex_attrib = glGetAttribLocation(program, "vVertexL");
+    if(vVertex_attrib == -1) {
+        fprintf(stderr, "Could not bind location: vVertex\n");
+        exit(0);
+    }
+    GLfloat a = x_size/2;
+    GLfloat b = y_size/2;
+    GLfloat c = z_size/2;
+
+    // GLfloat cube_vertices[] = {-a/2,-b/2,c/2,a/2,}
+    GLfloat cube_vertices[] = {
+        a, b, -c, -a, b, -c,
+        -a, -b, -c, a, -b, -c,
+        a, b, c, -a, b, c,
+        -a, -b, c, a, -b, c
+    };
+    GLushort cube_indices[] =  {
+        0, 1, 1, 2, 2, 3, 3, 0, // Front
+        4, 5, 5, 6, 6, 7, 7, 4, // Back
+        0, 4, 1, 5, 2, 6, 3, 7
+    };
+
+    //Generate VAO object
+    glGenVertexArrays(1, &cube_VAO);
+    glBindVertexArray(cube_VAO);
+
+    //Create VBOs for the VAO
+    //Position information (data + format)
+    int nVertices = (6*2)*2; //(6 faces) * (2 triangles each) * (3 vertices each)
+    GLfloat *expanded_vertices = new GLfloat[nVertices*3];
+    for(int i=0; i<nVertices; i++) {
+        expanded_vertices[i*2] = cube_vertices[cube_indices[i]*2];
+        expanded_vertices[i*2 + 1] = cube_vertices[cube_indices[i]*2+1];
+    }
+    GLuint vertex_VBO;
+    glGenBuffers(1, &vertex_VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_VBO);
+    glBufferData(GL_ARRAY_BUFFER, nVertices*3*sizeof(GLfloat), expanded_vertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(vVertex_attrib);
+    glVertexAttribPointer(vVertex_attrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    delete []expanded_vertices;
+
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0); //Unbind the VAO to disable changes outside this function.
 }
 
 void createBoundingbox(unsigned int &program, unsigned int &cube_VAO)
@@ -235,11 +276,10 @@ void createBoundingbox(unsigned int &program, unsigned int &cube_VAO)
         fprintf(stderr, "Could not bind location: vVertex\n");
         exit(0);
     }
-
     //Cube data
     // GLfloat cube_vertices[] = {
-    //     x_size-1, y_size-1, -z_size+1, 0, y_size-1, 0-z_size+1,
-    //     0, 0, -z_size+1, x_size-1, 0, -z_size+1,
+    //     x_size-1, y_size-1, -z_size+1, 0, y_size-1, -z_size+1, 0, 0, -z_size+1, x_size-1, 0, -z_size+1,
+    //     x_size-1, y_size-1, 0, 0,y_size-1, 0, 0, 0, 0, x_size-1, 0, 0,
     //     x_size, y_size-1, 0, 0, y_size-1, 0,
     //     0, 0, 0, x_size-1, 0, 0
     // };
@@ -307,7 +347,7 @@ void setupModelTransformation(unsigned int &program)
 void setupViewTransformation(unsigned int &program)
 {
     //Viewing transformations (World -> Camera coordinates
-    viewT = glm::lookAt(glm::vec3(camposition), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+    viewT = glm::lookAt(glm::vec3(camposition), glm::vec3(0.0, 0.0, 0.0), up);
 
     //Pass-on the viewing matrix to the vertex shader
     glUseProgram(program);
@@ -317,13 +357,6 @@ void setupViewTransformation(unsigned int &program)
         exit(0);
     }
     glUniformMatrix4fv(vView_uniform, 1, GL_FALSE, glm::value_ptr(viewT));
-
-	vCam_uniform = glGetUniformLocation(program, "camPosition");
-	if(vCam_uniform == -1){
-		fprintf(stderr, "Could not bind location: camPosition\n");
-		exit(0);
-	}
-	glUniform3fv(vCam_uniform, 1, glm::value_ptr(glm::vec3(camposition)));
 }
 
 void setupProjectionTransformation(unsigned int &program)
@@ -358,26 +391,34 @@ void setUniforms(unsigned int &program)
 {
     glUseProgram(program);
 
-    GLuint vstep_size = glGetUniformLocation(program, "stepsize");
+    vCam_uniform = glGetUniformLocation(program, "camPosition");
+	if(vCam_uniform == -1){
+		fprintf(stderr, "Could not bind location: camPosition\n");
+		exit(0);
+	}
+	glUniform3fv(vCam_uniform, 1, glm::value_ptr(glm::vec3(camposition)));
+
+    GLuint vstep_size = glGetUniformLocation(program, "stepSize");
     if(vstep_size == -1){
         fprintf(stderr, "Could not bind location: vstep_size\n");
         exit(0);
     }
     glUniform1f(vstep_size, step_size);
 
-    GLuint vExtentMin = glGetUniformLocation(program, "extentMin");
+    GLuint vExtentMin = glGetUniformLocation(program, "extentmin");
     if(vExtentMin == -1){
         fprintf(stderr, "Could not bind location: vExtentMin\n");
         exit(0);
     }
-    glUniform3f(vExtentMin, -x_size/2, -y_size/2, -z_size/2);
+    // glUniform3f(vExtentMin, -x_size/2, -y_size/2, -z_size/2);
+    glUniform3f(vExtentMin, 0, 0, 0);
 
-    GLuint vExtentMax = glGetUniformLocation(program, "extentMax");
+    GLuint vExtentMax = glGetUniformLocation(program, "extentmax");
     if(vExtentMax == -1){
         fprintf(stderr, "Could not bind location: vExtentMax\n");
         exit(0);
     }
-    glUniform3f(vExtentMax, x_size/2, y_size/2, z_size/2);
+    glUniform3f(vExtentMax, x_size, y_size, z_size);
 
     GLuint tex1 = glGetUniformLocation(program,"texture3d");
     if(tex1 == -1){
