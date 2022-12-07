@@ -1,3 +1,0 @@
-/home/pankaj/Desktop/cg_project/Real-Time_Volume_Rendering/code/build/CMakeFiles/CG_Project.dir
-/home/pankaj/Desktop/cg_project/Real-Time_Volume_Rendering/code/build/CMakeFiles/edit_cache.dir
-/home/pankaj/Desktop/cg_project/Real-Time_Volume_Rendering/code/build/CMakeFiles/rebuild_cache.dir
