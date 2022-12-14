@@ -39,7 +39,7 @@ float step_size = 0.001;
 const int vol_size = x_size*y_size*z_size;
 GLubyte* volume = new GLubyte[vol_size];
 GLfloat *tf = new GLfloat[256*4];
-glm::vec4 camposition = glm::vec4(0, 0, 600.0, 1.0);
+glm::vec4 camposition = glm::vec4(0, 0, 400.0, 1.0);
 glm::vec3 up = glm::vec3(0.0, 1.0, 0.0);
 GLuint VAO, transferfun, texture3d;
 
@@ -93,7 +93,6 @@ int main(int, char**)
     setupProjectionTransformation(shaderProgram);
 
     createBoundingbox(shaderProgram, VAO);                  // Creating vounding box;
-    // createLines(shaderProgram, VAO);
 
     oldX = oldY = currentX = currentY = 0.0;
     int prevLeftButtonState = GLFW_RELEASE;
@@ -102,7 +101,6 @@ int main(int, char**)
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
-
         // Get current mouse position
         int leftButtonState = glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT);
         double x,y;
@@ -119,7 +117,6 @@ int main(int, char**)
         else if(leftButtonState == GLFW_RELEASE && prevLeftButtonState == GLFW_PRESS){
             isDragging = false;
         }
-
         if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) {               // Moving camera with key press up/(shift-up)
             camposition.z = camposition.z+2;
             setupViewTransformation(shaderProgram);
@@ -128,28 +125,25 @@ int main(int, char**)
             camposition.z = camposition.z-2;
             setupViewTransformation(shaderProgram);
         }
-
         // Rotate based on mouse drag movementsetupViewTransformation(shaderProgram);
         prevLeftButtonState = leftButtonState;
         if(isDragging && (currentX !=oldX || currentY != oldY))
         {
             glm::vec3 va = getTrackBallVector(oldX, oldY);
             glm::vec3 vb = getTrackBallVector(currentX, currentY);
-
             float angle = acos(std::min(1.0f, glm::dot(va,vb)));
             glm::vec3 axis_in_camera_coord = glm::cross(va, vb);
             glm::mat3 camera2object = glm::inverse(glm::mat3(viewT*modelT));
             glm::vec3 axis_in_object_coord = camera2object * axis_in_camera_coord;
-            modelT = glm::rotate(modelT, angle, axis_in_object_coord);
-            glUniformMatrix4fv(vModel_uniform, 1, GL_FALSE, glm::value_ptr(modelT));
-
+            // modelT = glm::rotate(modelT, angle, axis_in_object_coord);
+            // glUniformMatrix4fv(vModel_uniform, 1, GL_FALSE, glm::value_ptr(modelT));
             // glm::vec3 cam_direction = glm::normalize(glm::vec3(camposition) - glm::vec3(0,0,0));
             // glm::vec3 right_axis = glm::normalize(cross(up,cam_direction));
             // up = glm::cross(cam_direction,right_axis);
             // setupViewTransformation(shaderProgram);
-
-
-
+            glm::mat4 dummy = glm::rotate(modelT, -angle, axis_in_object_coord);
+            camposition = glm::vec4(glm::mat3(dummy)*glm::vec3(camposition),1.0);
+            setupViewTransformation(shaderProgram);
             oldX = currentX;
             oldY = currentY;
         }
@@ -178,7 +172,10 @@ int main(int, char**)
 
         glBindVertexArray(VAO); 
         
+        // glUniform3f(vColor_uniform, 0.5, 0.5, 0.5);
         glDrawArrays(GL_TRIANGLES, 0, 36);
+        // glUniform3f(vColor_uniform, 0.0, 0.0, 0.0);
+        // glDrawArrays(GL_LINE_STRIP, 0, 36);
         // glDrawArrays(GL_LINES, 0, 24);
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -207,63 +204,30 @@ bool load_volume(const char* filename)
 GLfloat* createTransferfun(int width, int height)
 {
     for(int i=0; i<256; i++) {
-
+        // if(i==0){
+        //     tf[i*4] = 0/255.0;
+        //     tf[i*4 + 1] = 255/255.0;
+        //     tf[i*4 + 2] = 0/255.0;
+        //     tf[i*4 + 3] = 0.0;
+        // }
+        // if(i==100){
+        //     tf[i*4] = 200/255.0;
+        //     tf[i*4 + 1] = 200/255.0;
+        //     tf[i*4 + 2] = 200/255.0;
+        //     tf[i*4 + 3] = 0.5;
+        // }
+        // if(i==255){
+        //     tf[i*4] = 255/255.0;
+        //     tf[i*4 + 1] = 0/255.0;
+        //     tf[i*4 + 2] = 0/255.0;
+        //     tf[i*4 + 3] = 1.0;
+        // }
         tf[i*4] = float(i)/255.0;
         tf[i*4 + 1] = float(i)/255.0;
         tf[i*4 + 2] = float(i)/255.0;
         tf[i*4 + 3] = 0.5;
     }
     return tf;
-}
-
-void createLines(unsigned int &program, unsigned int &cube_VAO)
-{
-    glUseProgram(program);
-    //Bind shader variables
-    int vVertex_attrib = glGetAttribLocation(program, "vVertexL");
-    if(vVertex_attrib == -1) {
-        fprintf(stderr, "Could not bind location: vVertex\n");
-        exit(0);
-    }
-    GLfloat a = x_size/2;
-    GLfloat b = y_size/2;
-    GLfloat c = z_size/2;
-
-    // GLfloat cube_vertices[] = {-a/2,-b/2,c/2,a/2,}
-    GLfloat cube_vertices[] = {
-        a, b, -c, -a, b, -c,
-        -a, -b, -c, a, -b, -c,
-        a, b, c, -a, b, c,
-        -a, -b, c, a, -b, c
-    };
-    GLushort cube_indices[] =  {
-        0, 1, 1, 2, 2, 3, 3, 0, // Front
-        4, 5, 5, 6, 6, 7, 7, 4, // Back
-        0, 4, 1, 5, 2, 6, 3, 7
-    };
-
-    //Generate VAO object
-    glGenVertexArrays(1, &cube_VAO);
-    glBindVertexArray(cube_VAO);
-
-    //Create VBOs for the VAO
-    //Position information (data + format)
-    int nVertices = (6*2)*2; //(6 faces) * (2 triangles each) * (3 vertices each)
-    GLfloat *expanded_vertices = new GLfloat[nVertices*3];
-    for(int i=0; i<nVertices; i++) {
-        expanded_vertices[i*2] = cube_vertices[cube_indices[i]*2];
-        expanded_vertices[i*2 + 1] = cube_vertices[cube_indices[i]*2+1];
-    }
-    GLuint vertex_VBO;
-    glGenBuffers(1, &vertex_VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_VBO);
-    glBufferData(GL_ARRAY_BUFFER, nVertices*3*sizeof(GLfloat), expanded_vertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(vVertex_attrib);
-    glVertexAttribPointer(vVertex_attrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    delete []expanded_vertices;
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0); //Unbind the VAO to disable changes outside this function.
 }
 
 void createBoundingbox(unsigned int &program, unsigned int &cube_VAO)
@@ -277,23 +241,19 @@ void createBoundingbox(unsigned int &program, unsigned int &cube_VAO)
         exit(0);
     }
     //Cube data
-    // GLfloat cube_vertices[] = {
-    //     x_size-1, y_size-1, -z_size+1, 0, y_size-1, -z_size+1, 0, 0, -z_size+1, x_size-1, 0, -z_size+1,
-    //     x_size-1, y_size-1, 0, 0,y_size-1, 0, 0, 0, 0, x_size-1, 0, 0,
-    //     x_size, y_size-1, 0, 0, y_size-1, 0,
-    //     0, 0, 0, x_size-1, 0, 0
-    // };
-    GLfloat a = x_size/2;
-    GLfloat b = y_size/2;
-    GLfloat c = z_size/2;
     GLfloat cube_vertices[] = {
-        a, b, -c, -a, b, -c,
-        -a, -b, -c, a, -b, -c,
-        a, b, c, -a, b, c,
-        -a, -b, c, a, -b, c
+        x_size-1, y_size-1, -z_size+1, 0, y_size-1, -z_size+1, 0, 0, -z_size+1, x_size-1, 0, -z_size+1,
+        x_size-1, y_size-1, 0, 0, y_size-1, 0, 0, 0, 0, x_size-1, 0, 0
     };
-    // GLfloat cube_vertices[] = {10, 10, -10, -10, 10, -10, -10, -10, -10, 10, -10, -10, //Front
-    //                10, 10, 10, -10, 10, 10, -10, -10, 10, 10, -10, 10}; //Back
+    // GLfloat a = x_size/2;
+    // GLfloat b = y_size/2;
+    // GLfloat c = z_size/2;
+    // GLfloat cube_vertices[] = {
+    //     a, b, -c, -a, b, -c,
+    //     -a, -b, -c, a, -b, -c,
+    //     a, b, c, -a, b, c,
+    //     -a, -b, c, a, -b, c
+    // };
     GLushort cube_indices[] = {
                 0, 1, 2, 0, 2, 3, //Front
                 4, 7, 5, 5, 7, 6, //Back
@@ -331,7 +291,8 @@ void createBoundingbox(unsigned int &program, unsigned int &cube_VAO)
 void setupModelTransformation(unsigned int &program)
 {
     //Modelling transformations (Model -> World coordinates)
-    modelT = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0));//Model coordinates are the world coordinates
+    modelT = glm::translate(glm::mat4(1.0f), glm::vec3(-x_size/2, -y_size/2, z_size/2));//Model coordinates are the world coordinates
+    // modelT = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0));
 
     //Pass on the modelling matrix to the vertex shader
     glUseProgram(program);
@@ -342,7 +303,6 @@ void setupModelTransformation(unsigned int &program)
     }
     glUniformMatrix4fv(vModel_uniform, 1, GL_FALSE, glm::value_ptr(modelT));
 }
-
 
 void setupViewTransformation(unsigned int &program)
 {
@@ -362,7 +322,7 @@ void setupViewTransformation(unsigned int &program)
 void setupProjectionTransformation(unsigned int &program)
 {
     //Projection transformation
-    projectionT = glm::perspective(45.0f, (GLfloat)screen_width/(GLfloat)screen_height, 0.1f, 600.0f);
+    projectionT = glm::perspective(45.0f, (GLfloat)screen_width/(GLfloat)screen_height, 0.1f, 800.0f);
 
     //Pass on the projection matrix to the vertex shader
     glUseProgram(program);
@@ -410,15 +370,14 @@ void setUniforms(unsigned int &program)
         fprintf(stderr, "Could not bind location: vExtentMin\n");
         exit(0);
     }
-    // glUniform3f(vExtentMin, -x_size/2, -y_size/2, -z_size/2);
-    glUniform3f(vExtentMin, 0, 0, 0);
+    glUniform3f(vExtentMin, 0, 0, -z_size);
 
     GLuint vExtentMax = glGetUniformLocation(program, "extentmax");
     if(vExtentMax == -1){
         fprintf(stderr, "Could not bind location: vExtentMax\n");
         exit(0);
     }
-    glUniform3f(vExtentMax, x_size, y_size, z_size);
+    glUniform3f(vExtentMax, x_size, y_size, 0);
 
     GLuint tex1 = glGetUniformLocation(program,"texture3d");
     if(tex1 == -1){

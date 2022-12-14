@@ -3,6 +3,7 @@
 in vec3 fColor;
 in vec3 cameraPos;
 in vec3 ExtentMax;
+in vec4 fragPos;
 in vec3 ExtentMin;
 in mat4 inverse_viewproj;
 
@@ -19,7 +20,18 @@ float scalar;
 vec4 dst = vec4(0, 0, 0, 0);
 vec3 direction;
 vec3 curren_pos, pos_max, pos_min;
-float tmin, tmax;
+float tmin_y, tmin_z, tmax_y, tmax_z, tmin, tmax;
+
+vec3 up = vec3(0,1,0);
+float aspect = screen_width/screen_height;
+float focalHeight = 1.0; //Let's keep this fixed to 1.0
+float focalDistance = focalHeight/(2.0 * tan(45 * 3.14/(180.0 * 2.0))); //More the fovy, close is focal plane
+vec3 w = vec3(cameraPos - vec3(0,0,0));
+vec3 w1 = normalize(w);
+vec3 u = cross(up,w1);
+vec3 u1 = normalize(u);
+vec3 v = cross(w1,u1);
+vec3 v1 = normalize(v);
 
 out vec4 outColor;
 
@@ -40,14 +52,13 @@ bool rayintersection(vec3 position, vec3 dir)
 
 void main()
 {
-        vec4 ndc = vec4((gl_FragCoord.x/screen_width - 0.5)*2.0, (gl_FragCoord.y/screen_height - 0.5)*2.0, 
-                                (gl_FragCoord.z - 0.5)*2.0, 1.0);
-        // vec4 glposition = ndc/gl_FragCoord.w;
-        // vec3 position = vec3(inverse_viewproj*glposition);
-        vec4 glposition = inverse_viewproj*ndc;
-        vec3 position = (glposition/glposition.w).xyz;
-
-        direction = normalize(position - cameraPos);
+        vec3 position = vec3(fragPos);
+        direction += -(w1)*focalDistance;
+        float xw = aspect*(fragPos.x - screen_width/2.0 + 0.5)/screen_width;
+        float yw = (fragPos.y - screen_height/2.0 + 0.5)/screen_height;
+        direction += u1 * xw;
+        direction += v1 * yw;
+        // direction = normalize(direction);
 
         if(!rayintersection(position,direction)){
                 outColor = vec4(1.0,0.0,0.0,1.0);
@@ -84,5 +95,7 @@ void main()
         }
         sum /=i;
         outColor = dst;
-        // outColor = vec4(sum, sum, sum,1.0);
+        // outColor = vec4(sum, sum, sum, 1.0);
+
+        // outColor = vec4(tmin, tmin, tmin,1.0);
 }
