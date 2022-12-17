@@ -39,7 +39,7 @@ float step_size = 0.001;
 const int vol_size = x_size*y_size*z_size;
 GLubyte* volume = new GLubyte[vol_size];
 GLfloat *tf = new GLfloat[256*4];
-glm::vec4 camposition = glm::vec4(0, 0, 400.0, 1.0);
+glm::vec4 camposition = glm::vec4(0, 0, 450.0, 1.0);
 glm::vec3 up = glm::vec3(0.0, 1.0, 0.0);
 GLuint VAO, transferfun, texture3d;
 
@@ -60,7 +60,7 @@ int main(int, char**)
 
     tf = createTransferfun(x_size, y_size);                     // Creating transfer function
 
-    unsigned int shaderProgram = createProgram("./shaders/vshader.vs", "./shaders/fshader.fs");
+    unsigned int shaderProgram = createProgram("./shaders/vshader11.fs", "./shaders/fshader11.fs");
 
     glUseProgram(shaderProgram);
 
@@ -72,7 +72,8 @@ int main(int, char**)
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexImage3D(GL_TEXTURE_3D,0,GL_INTENSITY,x_size,y_size,z_size,0,GL_LUMINANCE,GL_UNSIGNED_BYTE,volume);      //Making a 3D texture with the volume
+    // glTexImage3D(GL_TEXTURE_3D,0,GL_INTENSITY,x_size,y_size,z_size,0,GL_LUMINANCE,GL_UNSIGNED_BYTE,volume);      //Making a 3D texture with the volume
+    glTexImage3D(GL_TEXTURE_3D,0,GL_R8,x_size,y_size,z_size,0,GL_RED,GL_UNSIGNED_BYTE,volume);
     delete [] volume;
 
     
@@ -204,28 +205,18 @@ bool load_volume(const char* filename)
 GLfloat* createTransferfun(int width, int height)
 {
     for(int i=0; i<256; i++) {
-        // if(i==0){
-        //     tf[i*4] = 0/255.0;
-        //     tf[i*4 + 1] = 255/255.0;
-        //     tf[i*4 + 2] = 0/255.0;
-        //     tf[i*4 + 3] = 0.0;
-        // }
-        // if(i==100){
-        //     tf[i*4] = 200/255.0;
-        //     tf[i*4 + 1] = 200/255.0;
-        //     tf[i*4 + 2] = 200/255.0;
-        //     tf[i*4 + 3] = 0.5;
-        // }
-        // if(i==255){
-        //     tf[i*4] = 255/255.0;
-        //     tf[i*4 + 1] = 0/255.0;
-        //     tf[i*4 + 2] = 0/255.0;
-        //     tf[i*4 + 3] = 1.0;
-        // }
-        tf[i*4] = float(i)/255.0;
-        tf[i*4 + 1] = float(i)/255.0;
-        tf[i*4 + 2] = float(i)/255.0;
-        tf[i*4 + 3] = 0.5;
+        if(i==0){
+            tf[i*4] = 0/255.0;
+            tf[i*4 + 1] = 0/255.0;
+            tf[i*4 + 2] = 0/255.0;
+            tf[i*4 + 3] = 0.0;
+        }
+        else{
+            tf[i*4] = float(i)/255.0;
+            tf[i*4 + 1] = float(i)/255.0;
+            tf[i*4 + 2] = float(i)/255.0;
+            tf[i*4 + 3] = 0.5;
+        }
     }
     return tf;
 }
@@ -323,6 +314,7 @@ void setupProjectionTransformation(unsigned int &program)
 {
     //Projection transformation
     projectionT = glm::perspective(45.0f, (GLfloat)screen_width/(GLfloat)screen_height, 0.1f, 800.0f);
+    // projectionT = glm::ortho(-600.0f, 600.0f, -600.0f, 600.0f, -200.0f, 200.0f);
 
     //Pass on the projection matrix to the vertex shader
     glUseProgram(program);
@@ -358,12 +350,12 @@ void setUniforms(unsigned int &program)
 	}
 	glUniform3fv(vCam_uniform, 1, glm::value_ptr(glm::vec3(camposition)));
 
-    GLuint vstep_size = glGetUniformLocation(program, "stepSize");
-    if(vstep_size == -1){
-        fprintf(stderr, "Could not bind location: vstep_size\n");
-        exit(0);
-    }
-    glUniform1f(vstep_size, step_size);
+    // GLuint vstep_size = glGetUniformLocation(program, "stepSize");
+    // if(vstep_size == -1){
+    //     fprintf(stderr, "Could not bind location: vstep_size\n");
+    //     exit(0);
+    // }
+    // glUniform1f(vstep_size, step_size);
 
     GLuint vExtentMin = glGetUniformLocation(program, "extentmin");
     if(vExtentMin == -1){
