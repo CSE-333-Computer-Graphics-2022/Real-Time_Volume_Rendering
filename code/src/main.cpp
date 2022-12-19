@@ -15,6 +15,11 @@
 #include <stdio.h>
 
 //Globals
+bool slider_flag = false;
+float opac = 0.0;
+int scalar = 0;
+float red, green, blue;
+
 int screen_width = 640, screen_height=640;
 GLint vModel_uniform, vView_uniform, vProjection_uniform;
 GLint vColor_uniform, vCam_uniform;
@@ -102,20 +107,24 @@ int main(int, char**)
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
+
+        if(glfwGetKey(window, GLFW_KEY_S)==GLFW_PRESS){
+            slider_flag = slider_flag ? false:true;
+        }
         // Get current mouse position
         int leftButtonState = glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT);
         double x,y;
         glfwGetCursorPos(window,&x,&y);
-        if(leftButtonState == GLFW_PRESS && prevLeftButtonState == GLFW_RELEASE){
+        if(leftButtonState == GLFW_PRESS && prevLeftButtonState == GLFW_RELEASE &&  slider_flag){
             isDragging = true;
             currentX = oldX = x;
             currentY = oldY = y;
         }
-        else if(leftButtonState == GLFW_PRESS && prevLeftButtonState == GLFW_PRESS){
+        else if(leftButtonState == GLFW_PRESS && prevLeftButtonState == GLFW_PRESS && slider_flag){
             currentX = x;
             currentY = y;
         }
-        else if(leftButtonState == GLFW_RELEASE && prevLeftButtonState == GLFW_PRESS){
+        else if(leftButtonState == GLFW_RELEASE && prevLeftButtonState == GLFW_PRESS && slider_flag){
             isDragging = false;
         }
         if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) {               // Moving camera with key press up/(shift-up)
@@ -136,12 +145,6 @@ int main(int, char**)
             glm::vec3 axis_in_camera_coord = glm::cross(va, vb);
             glm::mat3 camera2object = glm::inverse(glm::mat3(viewT*modelT));
             glm::vec3 axis_in_object_coord = camera2object * axis_in_camera_coord;
-            // modelT = glm::rotate(modelT, angle, axis_in_object_coord);
-            // glUniformMatrix4fv(vModel_uniform, 1, GL_FALSE, glm::value_ptr(modelT));
-            // glm::vec3 cam_direction = glm::normalize(glm::vec3(camposition) - glm::vec3(0,0,0));
-            // glm::vec3 right_axis = glm::normalize(cross(up,cam_direction));
-            // up = glm::cross(cam_direction,right_axis);
-            // setupViewTransformation(shaderProgram);
             glm::mat4 dummy = glm::rotate(modelT, -angle, axis_in_object_coord);
             camposition = glm::vec4(glm::mat3(dummy)*glm::vec3(camposition),1.0);
             setupViewTransformation(shaderProgram);
@@ -154,14 +157,34 @@ int main(int, char**)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        glUseProgram(shaderProgram);
-        setUniforms(shaderProgram);                         // This will set all the uniform variable inside shaders
-
+        
         {
             ImGui::Begin("Information");                          
             ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+            ImGui::SliderInt("Scalar range", &scalar, 0, 255);
+            red = tf[scalar*4];
+            ImGui::SliderFloat("Red", &red, 0, 1);
+            green = tf[scalar*4 + 1];
+            ImGui::SliderFloat("Green", &green, 0, 1);
+            blue = tf[scalar*4 + 2];
+            ImGui::SliderFloat("Blue", &blue, 0, 1);
+            opac = tf[scalar*4 + 3];
+            ImGui::SliderFloat("Opacity", &opac, 0, 1);
+
+            tf[scalar*4 + 0] = red;
+            tf[scalar*4 + 1] = green;
+            tf[scalar*4 + 2] = blue;
+            tf[scalar*4 + 3] = opac;
+
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_1D, transferfun);
+            
+            glTexImage1D(GL_TEXTURE_1D,0,GL_RGBA,256,0,GL_RGBA,GL_FLOAT,tf); 
             ImGui::End();
         }
+        glUseProgram(shaderProgram);
+        setUniforms(shaderProgram);                         // This will set all the uniform variable inside shaders
+
 
         // Rendering
         ImGui::Render();
@@ -201,18 +224,10 @@ bool load_volume(const char* filename)
 GLfloat* createTransferfun(int width, int height)
 {
     for(int i=0; i<256; i++) {
-        // if(i==0){
-        //     tf[i*4] = 0/255.0;
-        //     tf[i*4 + 1] = 0/255.0;
-        //     tf[i*4 + 2] = 0/255.0;
-        //     tf[i*4 + 3] = 0.0;
-        // }
-        // else{
-        //     tf[i*4] = float(i)/255.0;
-        //     tf[i*4 + 1] = float(i)/255.0;
-        //     tf[i*4 + 2] = float(i)/255.0;
-        //     tf[i*4 + 3] = 0.5;
-        // }
+        // tf[i*4] = float(i)/255.0;
+        // tf[i*4 + 1] = float(i)/255.0;
+        // tf[i*4 + 2] = float(i)/255.0;
+        // tf[i*4 + 3] = 0.5;
         if(i<=10){
             tf[i*4] = 0/255.0;
             tf[i*4 + 1] = 0/255.0;

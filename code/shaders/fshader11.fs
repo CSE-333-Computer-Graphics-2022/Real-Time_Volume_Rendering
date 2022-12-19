@@ -105,7 +105,7 @@ void main()
     direction = normalize(u*xw + v*yw - focalDistance*w);
 
     if(!rayintersection(position,direction)){
-            outColor = vec4(1.0,0.0,0.0,1.0);
+            outColor = vec4(0.0,0.0,0.0,0.0);
             return;
     }
 
