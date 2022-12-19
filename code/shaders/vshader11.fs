@@ -14,15 +14,11 @@ out vec3 fColor;
 out vec3 cameraPos;
 out vec3 ExtentMax;
 out vec3 ExtentMin;
-out vec4 fragPos;
-out mat4 inverse_viewproj;
 
 void main() {
 	gl_Position = vProjection * vView * vModel * vec4(vVertex, 1.0);
     cameraPos = camPosition;
 	ExtentMax = vec3(vModel*vec4(extentmax,1.0));
 	ExtentMin = vec3(vModel*vec4(extentmin,1.0));
-	inverse_viewproj = inverse(vProjection*vView);
-	fragPos = vModel*vec4(vVertex,1.0);
 	fColor = vColor; //Interpolate color
 }

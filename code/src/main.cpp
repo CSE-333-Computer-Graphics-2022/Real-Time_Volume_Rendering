@@ -35,7 +35,7 @@ GLfloat* createTransferfun(int width, int height);
 float x_size = 256;
 float y_size = 256;
 float z_size = 256;
-float step_size = 0.001;
+float step_size = 1;
 const int vol_size = x_size*y_size*z_size;
 GLubyte* volume = new GLubyte[vol_size];
 GLfloat *tf = new GLfloat[256*4];
@@ -173,11 +173,7 @@ int main(int, char**)
 
         glBindVertexArray(VAO); 
         
-        // glUniform3f(vColor_uniform, 0.5, 0.5, 0.5);
         glDrawArrays(GL_TRIANGLES, 0, 36);
-        // glUniform3f(vColor_uniform, 0.0, 0.0, 0.0);
-        // glDrawArrays(GL_LINE_STRIP, 0, 36);
-        // glDrawArrays(GL_LINES, 0, 24);
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
@@ -205,18 +201,34 @@ bool load_volume(const char* filename)
 GLfloat* createTransferfun(int width, int height)
 {
     for(int i=0; i<256; i++) {
-        if(i==0){
+        // if(i==0){
+        //     tf[i*4] = 0/255.0;
+        //     tf[i*4 + 1] = 0/255.0;
+        //     tf[i*4 + 2] = 0/255.0;
+        //     tf[i*4 + 3] = 0.0;
+        // }
+        // else{
+        //     tf[i*4] = float(i)/255.0;
+        //     tf[i*4 + 1] = float(i)/255.0;
+        //     tf[i*4 + 2] = float(i)/255.0;
+        //     tf[i*4 + 3] = 0.5;
+        // }
+        if(i<=10){
+            tf[i*4] = 0/255.0;
+            tf[i*4 + 1] = 0/255.0;
+            tf[i*4 + 2] = 255/255.0;
+        }
+        if(i==128){
             tf[i*4] = 0/255.0;
             tf[i*4 + 1] = 0/255.0;
             tf[i*4 + 2] = 0/255.0;
-            tf[i*4 + 3] = 0.0;
         }
-        else{
-            tf[i*4] = float(i)/255.0;
-            tf[i*4 + 1] = float(i)/255.0;
-            tf[i*4 + 2] = float(i)/255.0;
-            tf[i*4 + 3] = 0.5;
+        if(i>=130){
+            tf[i*4] = 255/255.0;
+            tf[i*4 + 1] = 0/255.0;
+            tf[i*4 + 2] = 0/255.0;
         }
+        tf[i*4 + 3] = float(i)/255.0;
     }
     return tf;
 }
@@ -283,8 +295,7 @@ void setupModelTransformation(unsigned int &program)
 {
     //Modelling transformations (Model -> World coordinates)
     modelT = glm::translate(glm::mat4(1.0f), glm::vec3(-x_size/2, -y_size/2, z_size/2));//Model coordinates are the world coordinates
-    // modelT = glm::translate(glm::mat4(1.0f), glm::vec3(0, 0, 0));
-
+    
     //Pass on the modelling matrix to the vertex shader
     glUseProgram(program);
     vModel_uniform = glGetUniformLocation(program, "vModel");
@@ -314,7 +325,6 @@ void setupProjectionTransformation(unsigned int &program)
 {
     //Projection transformation
     projectionT = glm::perspective(45.0f, (GLfloat)screen_width/(GLfloat)screen_height, 0.1f, 800.0f);
-    // projectionT = glm::ortho(-600.0f, 600.0f, -600.0f, 600.0f, -200.0f, 200.0f);
 
     //Pass on the projection matrix to the vertex shader
     glUseProgram(program);
@@ -350,12 +360,12 @@ void setUniforms(unsigned int &program)
 	}
 	glUniform3fv(vCam_uniform, 1, glm::value_ptr(glm::vec3(camposition)));
 
-    // GLuint vstep_size = glGetUniformLocation(program, "stepSize");
-    // if(vstep_size == -1){
-    //     fprintf(stderr, "Could not bind location: vstep_size\n");
-    //     exit(0);
-    // }
-    // glUniform1f(vstep_size, step_size);
+    GLuint vstep_size = glGetUniformLocation(program, "stepSize");
+    if(vstep_size == -1){
+        fprintf(stderr, "Could not bind location: vstep_size\n");
+        exit(0);
+    }
+    glUniform1f(vstep_size, step_size);
 
     GLuint vExtentMin = glGetUniformLocation(program, "extentmin");
     if(vExtentMin == -1){
