@@ -30,7 +30,7 @@ vec3 w = normalize(vec3(cameraPos - vec3(0,0,0)));
 vec3 u = normalize(cross(up,w));
 vec3 v = normalize(cross(w,u));
 
-float delta_t = 0.001;
+float delta_t = 100;
 float tentry;
 float texit;
 vec3 model_center = vec3(0, 0, 0);
@@ -107,7 +107,7 @@ void main()
         direction = normalize(u*xw + v*yw - focalDistance*w);
 
         if(!rayintersection(position,direction)){
-                outColor = vec4(1.0,0.0,0.0,1.0);
+                outColor = vec4(1.0,0.0,0.0,0.0);
                 return;
         }
 

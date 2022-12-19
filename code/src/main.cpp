@@ -39,7 +39,7 @@ float step_size = 0.001;
 const int vol_size = x_size*y_size*z_size;
 GLubyte* volume = new GLubyte[vol_size];
 GLfloat *tf = new GLfloat[256*4];
-glm::vec4 camposition = glm::vec4(0, 0, 450.0, 1.0);
+glm::vec4 camposition = glm::vec4(0, 0, 280.0, 1.0);
 glm::vec3 up = glm::vec3(0.0, 1.0, 0.0);
 GLuint VAO, transferfun, texture3d;
 
