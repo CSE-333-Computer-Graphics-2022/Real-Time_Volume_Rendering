@@ -121,8 +121,8 @@ void main()
         scalar = value.r;
         vec4 src = texture(transferfun,scalar);
 
-        dst.rgb = dst.rgb + (1.0 - dst.a)*src.rgb*scalar; // src can replaced by dst
-        dst.a = dst.a + (1.0 - dst.a)*scalar; //dst can be replaced by src
+        dst.rgb = dst.rgb + (1.0 - dst.a)*src.rgb*scalar;
+        dst.a = dst.a + (1.0 - dst.a)*scalar;
 
         t += stepSize;
         curren_pos = position + direction*t;
