@@ -115,16 +115,16 @@ int main(int, char**)
         int leftButtonState = glfwGetMouseButton(window,GLFW_MOUSE_BUTTON_LEFT);
         double x,y;
         glfwGetCursorPos(window,&x,&y);
-        if(leftButtonState == GLFW_PRESS && prevLeftButtonState == GLFW_RELEASE &&  slider_flag){
+        if(leftButtonState == GLFW_PRESS && prevLeftButtonState == GLFW_RELEASE &&  !slider_flag){
             isDragging = true;
             currentX = oldX = x;
             currentY = oldY = y;
         }
-        else if(leftButtonState == GLFW_PRESS && prevLeftButtonState == GLFW_PRESS && slider_flag){
+        else if(leftButtonState == GLFW_PRESS && prevLeftButtonState == GLFW_PRESS && !slider_flag){
             currentX = x;
             currentY = y;
         }
-        else if(leftButtonState == GLFW_RELEASE && prevLeftButtonState == GLFW_PRESS && slider_flag){
+        else if(leftButtonState == GLFW_RELEASE && prevLeftButtonState == GLFW_PRESS && !slider_flag){
             isDragging = false;
         }
         if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_UpArrow))) {               // Moving camera with key press up/(shift-up)

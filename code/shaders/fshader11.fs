@@ -121,9 +121,7 @@ void main()
         scalar = value.r;
         vec4 src = texture(transferfun,scalar);
 
-        // dst = (1.0 - dst.a)*src + dst;
-        // dst = (1.0 - dst.a)*src + (dst.a)*dst;
-        dst.rgb = dst.rgb + (1.0 - src.a)*src.rgb*scalar; // src can replaced by dst
+        dst.rgb = dst.rgb + (1.0 - dst.a)*src.rgb*scalar; // src can replaced by dst
         dst.a = dst.a + (1.0 - dst.a)*scalar; //dst can be replaced by src
 
         t += stepSize;
